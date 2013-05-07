@@ -1,0 +1,13 @@
+img.drum {
+	opacity: 1.0;
+	filter:alpha(opacity=1.0);
+	display: block;
+	position: absolute;
+}
+
+img.note {
+	opacity: 0;
+	filter:alpha(opacity=0);
+	display: block;
+	position: absolute;
+}
