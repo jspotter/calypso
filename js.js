@@ -33,37 +33,37 @@ var note_offsets = {
 };
 
 var lead_notes = {
-	"c": "note_lead_c",
-	"c#": "note_lead_cs",
-	"d": "note_lead_d",
-	"d#": "note_lead_ds",
-	"e": "note_lead_e",
-	"f": "note_lead_f",
-	"f#": "note_lead_fs",
-	"g": "note_lead_g",
-	"g#": "note_lead_gs",
-	"a": "note_lead_a",
-	"a#": "note_lead_as",
-	"b": "note_lead_b",
+	"60": "note_lead_c",
+	"61": "note_lead_cs",
+	"62": "note_lead_d",
+	"63": "note_lead_ds",
+	"64": "note_lead_e",
+	"65": "note_lead_f",
+	"66": "note_lead_fs",
+	"67": "note_lead_g",
+	"68": "note_lead_gs",
+	"69": "note_lead_a",
+	"70": "note_lead_as",
+	"71": "note_lead_b",
 
-	"cc": "note_lead_cc",
-	"cc#": "note_lead_ccs",
-	"dd": "note_lead_dd",
-	"dd#": "note_lead_dds",
-	"ee": "note_lead_ee",
-	"ff": "note_lead_ff",
-	"ff#": "note_lead_ffs",
-	"gg": "note_lead_gg",
-	"gg#": "note_lead_ggs",
-	"aa": "note_lead_aa",
-	"aa#": "note_lead_aas",
-	"bb": "note_lead_bb",
+	"72": "note_lead_cc",
+	"73": "note_lead_ccs",
+	"74": "note_lead_dd",
+	"75": "note_lead_dds",
+	"76": "note_lead_ee",
+	"77": "note_lead_ff",
+	"78": "note_lead_ffs",
+	"79": "note_lead_gg",
+	"80": "note_lead_ggs",
+	"81": "note_lead_aa",
+	"82": "note_lead_aas",
+	"83": "note_lead_bb",
 
-	"ccc": "note_lead_ccc",
-	"ccc#": "note_lead_cccs",
-	"ddd": "note_lead_ddd",
-	"ddd#": "note_lead_ddds",
-	"eee": "note_lead_eee"
+	"84": "note_lead_ccc",
+	"85": "note_lead_cccs",
+	"86": "note_lead_ddd",
+	"87": "note_lead_ddds",
+	"88": "note_lead_eee"
 };
 
 var note_assets = {
@@ -104,7 +104,14 @@ function Drum(type) {
 
 	this.play = function(filename) {
 		loadRemote(filename, function(data) {
-			midi_file = MidiFile(data);
+			var midi_file = MidiFile(data);
+			var num_events = midi_file["tracks"][1].length;
+			for (var i = 0; i < num_events; i++) {
+				var ev = midi_file["tracks"][1][i];
+				if (ev.subtype == "noteOn") {
+					// change this to use setTimeout
+				}
+			}
 		});
 	}
 }
