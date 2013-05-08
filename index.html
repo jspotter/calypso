@@ -8,7 +8,7 @@
 	</head>
 	<body onload="my_drum.setup();">
 		<script type="text/javascript">
-			var my_drum = new Drum("lead");
+			var my_drum = new Drum("lead", "billyjoel.mid");
 		</script>
 		<h1>
 			Lead
@@ -47,9 +47,10 @@
 		<img id="note_lead_ddd" class="note" src="notes/lead/ddd.png">
 		<img id="note_lead_ddds" class="note" src="notes/lead/ddds.png">
 		<img id="note_lead_eee" class="note" src="notes/lead/eee.png">
+		
+		<!-- Controls -->
+		<div id="controls">
+			Loading MIDI file...
+		</div>
 	</body>
-
-	<script type="text/javascript">
-		my_drum.play("billyjoel.mid");
-	</script>
 <html>

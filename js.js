@@ -70,13 +70,23 @@ var note_assets = {
 	"lead": lead_notes
 };
 
-function Drum(type) {
-	this.type = type;
-	this.assets = note_assets[this.type];
-	var this_drum = this;
+var track_nums = {
+	"lead" : 1
+};
 
-	this.setup = function(type) {
+function Drum(type, filename) {
+	var this_drum = this;
+	this.type = type;
+	this.midi_file = {};
+	this.stopped = true;
+	this.assets = note_assets[type];
+
+	// Set up this drum
+	this.setup = function() {
 		var offset = $("#drum").offset();
+		var height = $("#drum").height();
+		
+		// Put notes in place
 		for (var key in lead_notes) {
 			id = this.assets[key];
 			$("#" + id)
@@ -90,6 +100,30 @@ function Drum(type) {
 					this_drum.note_off($(this).attr("name"));
 				});
 		}
+		
+		$("#controls")
+			.offset({
+				left: offset.left,
+				top: offset.top + height
+			});
+		
+		// Load MIDI file and set up controls
+		loadRemote(filename, function(data) {
+			//alert('DONE');
+			this_drum.midi_file = MidiFile(data);
+			var play_button = $("<input>", {type: "button", value: "PLAY"})
+				.click(function() {
+					this_drum.play();
+				});
+			var stop_button = $("<input>", {type: "button", value: "STOP"})
+				.click(function() {
+					this_drum.stop();
+				});
+			$("#controls")
+				.html("")
+				.append(play_button)
+				.append(stop_button);
+		});
 	}
 
 	this.note_on = function(note) {
@@ -99,20 +133,63 @@ function Drum(type) {
 
 	this.note_off = function(note) {
 		id = this.assets[note];
-		$("#" + id).fadeTo("slow", 0);
+		$("#" + id).fadeTo("fast", 0);
+	}
+	
+	this.find_next_event = function(events, index) {
+		var delta = 0;
+		var num_events = events.length;
+		for (var i = index; i < num_events; i++) {
+			var ev = events[i];
+			delta = delta + ev.deltaTime;
+			if (ev.subtype == "noteOn" || ev.subtype == "noteOff") {
+				//console.log("found " + ev.subtype + " " + ev.noteNumber + " " + delta);
+				setTimeout(function() {
+					this_drum.handle_event(events, i);
+				}, delta * 3);
+				break;
+			}
+		}
+	}
+	
+	this.handle_event = function(events, index) {
+		if (this.stopped) return;
+	
+		var ev = events[index];
+		
+		// handle event
+		if (ev.subtype == "noteOn") {
+			this.note_on(ev.noteNumber);
+		} else if (ev.subtype == "noteOff") {
+			this.note_off(ev.noteNumber);
+		}
+		
+		// prepare for next event
+		this.find_next_event(events, index + 1);
 	}
 
-	this.play = function(filename) {
-		loadRemote(filename, function(data) {
-			var midi_file = MidiFile(data);
-			var num_events = midi_file["tracks"][1].length;
-			for (var i = 0; i < num_events; i++) {
-				var ev = midi_file["tracks"][1][i];
-				if (ev.subtype == "noteOn") {
-					// change this to use setTimeout
-				}
+	this.play = function() {
+		if (!this.stopped) return;
+		this.stopped = false;
+		var track_num = track_nums[this.type];
+		var events = this.midi_file["tracks"][track_num];
+		this.find_next_event(events, 0);
+		
+		/*var track_num = track_nums[type];
+		var num_events = midi_file["tracks"][track_num].length;
+		for (var i = 0; i < num_events; i++) {
+			var ev = this.midi_file["tracks"][track_num][i];
+			if (ev.subtype == "noteOn") {
+				// change this to use setTimeout
 			}
-		});
+		}*/
+	}
+	
+	this.stop = function() {
+		this.stopped = true;
+		for (var key in lead_notes) {
+			this.note_off(key);
+		}
 	}
 }
 
