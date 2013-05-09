@@ -6,51 +6,126 @@
 		<script type="text/javascript" src="jasmid/midifile.js"></script>
 		<script type="text/javascript" src="js.js"></script>
 	</head>
-	<body onload="my_drum.setup();">
-		<script type="text/javascript">
-			var my_drum = new Drum("lead", "billyjoel.mid");
-		</script>
-		<h1>
-			Lead
-		</h1>
-		<img id="drum" class="drum" src="lead.png">
+	<body onload="
+			var manager = new Manager(['lead', 'tenors', 'seconds'],
+					'billyjoel.mid');
+			manager.setup_drums();
+			//manager.hide_drum('lead');
+			//manager.hide_drum('tenors');
+			//manager.hide_drum('seconds');
+	">
+		<img id="lead" class="drum" src="lead.png">
+		<img id="tenors" class="drum" src="tenors.png">
+		<img id="seconds" class="drum" src="seconds.png">
+		<!--<img id="triples" class="drum" src="triples.png">-->
 
-		<!-- Notes -->
-		<img id="note_lead_c" class="note" src="notes/lead/c.png">
-		<img id="note_lead_cs" class="note" src="notes/lead/cs.png">
-		<img id="note_lead_d" class="note" src="notes/lead/d.png">
-		<img id="note_lead_ds" class="note" src="notes/lead/ds.png">
-		<img id="note_lead_e" class="note" src="notes/lead/e.png">
-		<img id="note_lead_f" class="note" src="notes/lead/f.png">
-		<img id="note_lead_fs" class="note" src="notes/lead/fs.png">
-		<img id="note_lead_g" class="note" src="notes/lead/g.png">
-		<img id="note_lead_gs" class="note" src="notes/lead/gs.png">
-		<img id="note_lead_a" class="note" src="notes/lead/a.png">
-		<img id="note_lead_as" class="note" src="notes/lead/as.png">
-		<img id="note_lead_b" class="note" src="notes/lead/b.png">
+		<!-- Lead Notes -->
+		<img id="lead_60" class="note" src="notes/lead/c.png">
+		<img id="lead_61" class="note" src="notes/lead/cs.png">
+		<img id="lead_62" class="note" src="notes/lead/d.png">
+		<img id="lead_63" class="note" src="notes/lead/ds.png">
+		<img id="lead_64" class="note" src="notes/lead/e.png">
+		<img id="lead_65" class="note" src="notes/lead/f.png">
+		<img id="lead_66" class="note" src="notes/lead/fs.png">
+		<img id="lead_67" class="note" src="notes/lead/g.png">
+		<img id="lead_68" class="note" src="notes/lead/gs.png">
+		<img id="lead_69" class="note" src="notes/lead/a.png">
+		<img id="lead_70" class="note" src="notes/lead/as.png">
+		<img id="lead_71" class="note" src="notes/lead/b.png">
 		
-		<img id="note_lead_cc" class="note" src="notes/lead/cc.png">
-		<img id="note_lead_ccs" class="note" src="notes/lead/ccs.png">
-		<img id="note_lead_dd" class="note" src="notes/lead/dd.png">
-		<img id="note_lead_dds" class="note" src="notes/lead/dds.png">
-		<img id="note_lead_ee" class="note" src="notes/lead/ee.png">
-		<img id="note_lead_ff" class="note" src="notes/lead/ff.png">
-		<img id="note_lead_ffs" class="note" src="notes/lead/ffs.png">
-		<img id="note_lead_gg" class="note" src="notes/lead/gg.png">
-		<img id="note_lead_ggs" class="note" src="notes/lead/ggs.png">
-		<img id="note_lead_aa" class="note" src="notes/lead/aa.png">
-		<img id="note_lead_aas" class="note" src="notes/lead/aas.png">
-		<img id="note_lead_bb" class="note" src="notes/lead/bb.png">
+		<img id="lead_72" class="note" src="notes/lead/cc.png">
+		<img id="lead_73" class="note" src="notes/lead/ccs.png">
+		<img id="lead_74" class="note" src="notes/lead/dd.png">
+		<img id="lead_75" class="note" src="notes/lead/dds.png">
+		<img id="lead_76" class="note" src="notes/lead/ee.png">
+		<img id="lead_77" class="note" src="notes/lead/ff.png">
+		<img id="lead_78" class="note" src="notes/lead/ffs.png">
+		<img id="lead_79" class="note" src="notes/lead/gg.png">
+		<img id="lead_80" class="note" src="notes/lead/ggs.png">
+		<img id="lead_81" class="note" src="notes/lead/aa.png">
+		<img id="lead_82" class="note" src="notes/lead/aas.png">
+		<img id="lead_83" class="note" src="notes/lead/bb.png">
 
-		<img id="note_lead_ccc" class="note" src="notes/lead/ccc.png">
-		<img id="note_lead_cccs" class="note" src="notes/lead/cccs.png">
-		<img id="note_lead_ddd" class="note" src="notes/lead/ddd.png">
-		<img id="note_lead_ddds" class="note" src="notes/lead/ddds.png">
-		<img id="note_lead_eee" class="note" src="notes/lead/eee.png">
+		<img id="lead_84" class="note" src="notes/lead/ccc.png">
+		<img id="lead_85" class="note" src="notes/lead/cccs.png">
+		<img id="lead_86" class="note" src="notes/lead/ddd.png">
+		<img id="lead_87" class="note" src="notes/lead/ddds.png">
+		<img id="lead_88" class="note" src="notes/lead/eee.png">
+
+		<!-- Tenor Notes -->
+		<img id="tenors_53" class="note" src="notes/tenors/_f.png">
+		<img id="tenors_54" class="note" src="notes/tenors/_fs.png">
+		<img id="tenors_55" class="note" src="notes/tenors/_g.png">
+		<img id="tenors_56" class="note" src="notes/tenors/_gs.png">
+		<img id="tenors_57" class="note" src="notes/tenors/_a.png">
+		<img id="tenors_58" class="note" src="notes/tenors/_as.png">
+		<img id="tenors_59" class="note" src="notes/tenors/_b.png">
+		
+		<img id="tenors_60" class="note" src="notes/tenors/c.png">
+		<img id="tenors_61" class="note" src="notes/tenors/cs.png">
+		<img id="tenors_62" class="note" src="notes/tenors/d.png">
+		<img id="tenors_63" class="note" src="notes/tenors/ds.png">
+		<img id="tenors_64" class="note" src="notes/tenors/e.png">
+		<img id="tenors_65" class="note" src="notes/tenors/f.png">
+		<img id="tenors_66" class="note" src="notes/tenors/fs.png">
+		<img id="tenors_67" class="note" src="notes/tenors/g.png">
+		<img id="tenors_68" class="note" src="notes/tenors/gs.png">
+		<img id="tenors_69" class="note" src="notes/tenors/a.png">
+		<img id="tenors_70" class="note" src="notes/tenors/as.png">
+		<img id="tenors_71" class="note" src="notes/tenors/b.png">
+		
+		<img id="tenors_72" class="note" src="notes/tenors/cc.png">
+		<img id="tenors_73" class="note" src="notes/tenors/ccs.png">
+		<img id="tenors_74" class="note" src="notes/tenors/dd.png">
+		<img id="tenors_75" class="note" src="notes/tenors/dds.png">
+		<img id="tenors_76" class="note" src="notes/tenors/ee.png">
+		<img id="tenors_77" class="note" src="notes/tenors/ff.png">
+		<img id="tenors_78" class="note" src="notes/tenors/ffs.png">
+		<img id="tenors_79" class="note" src="notes/tenors/gg.png">
+		<img id="tenors_80" class="note" src="notes/tenors/ggs.png">
+		<img id="tenors_81" class="note" src="notes/tenors/aa.png">
+		<img id="tenors_82" class="note" src="notes/tenors/aas.png">
+
+		<!-- Seconds Notes -->
+		<img id="seconds_54" class="note" src="notes/seconds/_fs.png">
+		<img id="seconds_55" class="note" src="notes/seconds/_g.png">
+		<img id="seconds_56" class="note" src="notes/seconds/_gs.png">
+		<img id="seconds_57" class="note" src="notes/seconds/_a.png">
+		<img id="seconds_58" class="note" src="notes/seconds/_as.png">
+		<img id="seconds_59" class="note" src="notes/seconds/_b.png">
+		
+		<img id="seconds_60" class="note" src="notes/seconds/c.png">
+		<img id="seconds_61" class="note" src="notes/seconds/cs.png">
+		<img id="seconds_62" class="note" src="notes/seconds/d.png">
+		<img id="seconds_63" class="note" src="notes/seconds/ds.png">
+		<img id="seconds_64" class="note" src="notes/seconds/e.png">
+		<img id="seconds_65" class="note" src="notes/seconds/f.png">
+		<img id="seconds_66" class="note" src="notes/seconds/fs.png">
+		<img id="seconds_67" class="note" src="notes/seconds/g.png">
+		<img id="seconds_68" class="note" src="notes/seconds/gs.png">
+		<img id="seconds_69" class="note" src="notes/seconds/a.png">
+		<img id="seconds_70" class="note" src="notes/seconds/as.png">
+		<img id="seconds_71" class="note" src="notes/seconds/b.png">
+		
+		<img id="seconds_72" class="note" src="notes/seconds/cc.png">
+		<img id="seconds_73" class="note" src="notes/seconds/ccs.png">
+		<img id="seconds_74" class="note" src="notes/seconds/dd.png">
+		<img id="seconds_75" class="note" src="notes/seconds/dds.png">
+		<img id="seconds_76" class="note" src="notes/seconds/ee.png">
+		<img id="seconds_77" class="note" src="notes/seconds/ff.png">
+		<img id="seconds_78" class="note" src="notes/seconds/ffs.png">
+		<img id="seconds_79" class="note" src="notes/seconds/gg.png">
+		<img id="seconds_80" class="note" src="notes/seconds/ggs.png">
+		<img id="seconds_81" class="note" src="notes/seconds/aa.png">
+		<img id="seconds_82" class="note" src="notes/seconds/aas.png">
+		<img id="seconds_83" class="note" src="notes/seconds/bb.png">
+
+		<img id="seconds_84" class="note" src="notes/seconds/ccc.png">
+		<img id="seconds_85" class="note" src="notes/seconds/cccs.png">
 		
 		<!-- Controls -->
-		<div id="controls">
-			Loading MIDI file...
-		</div>
+		<!--<div id="controls">
+			Controls go here.
+		</div>-->
 	</body>
 <html>
