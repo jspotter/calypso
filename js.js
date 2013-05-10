@@ -140,9 +140,6 @@ function Drum(type) {
 	this.elem = $("#" + this.type);
 	this.old_width = this.elem.width();
 	this.old_height = this.elem.height();
-	console.log(this.type + " old");
-	console.log("  " + this.old_width);
-	console.log("  " + this.old_height);
 	this.scale = 1;
 	this.click_initialized = false;
 
@@ -150,13 +147,8 @@ function Drum(type) {
 	this.setup = function(left_offset, max_width) {
 		var new_scale = Math.min(1, max_width / this.old_width);
 		var scale_by = new_scale / this.scale;
-		console.log(this.type + " scale by");
-		console.log("  " + scale_by);
 		this.scale = new_scale;
 		this.elem.width(this.elem.width() * scale_by);
-		//this.elem.height(this.elem.height() * scale_by);
-		console.log("  " + this.elem.width());
-		console.log("  " + this.elem.height());
 
 		var offset = this.elem.offset();
 		this.elem.offset({
@@ -218,7 +210,7 @@ function Drum(type) {
 
 	this.note_off = function(note) {
 		id = this.type + "_" + note;
-		$("#" + id).fadeTo("slow", 0);
+		$("#" + id).fadeTo(0, 0);
 	}
 }
 
@@ -294,7 +286,7 @@ function Manager(drums, midi_filename) {
 	// Finds the next note on event or note off event,
 	// and schedules that event to take place after the
 	// appropriate amount of time.
-	this.find_next_event = function(events, index) {
+	this.find_next_event = function(drum, events, index) {
 		var delta = 0;
 		var num_events = events.length;
 		for (var i = index; i < num_events; i++) {
@@ -302,7 +294,7 @@ function Manager(drums, midi_filename) {
 			delta = delta + ev.deltaTime;
 			if (ev.subtype == "noteOn" || ev.subtype == "noteOff") {
 				setTimeout(function() {
-					this_drum.handle_event(events, i);
+					this_manager.handle_event(drum, events, i);
 				}, delta * 3);
 				break;
 			}
@@ -310,35 +302,41 @@ function Manager(drums, midi_filename) {
 	}
 
 	// Callback for setTimeout
-	this.handle_event = function(events, index) {
+	this.handle_event = function(drum, events, index) {
 		if (this.stopped) return;
 		
 		// handle event
 		var ev = events[index];
 		if (ev.subtype == "noteOn") {
-			this.note_on(ev.noteNumber);
+			drum.note_on(ev.noteNumber);
 		} else if (ev.subtype == "noteOff") {
-			this.note_off(ev.noteNumber);
+			drum.note_off(ev.noteNumber);
 		}
 		
 		// prepare for next event
-		this.find_next_event(events, index + 1);
+		this.find_next_event(drum, events, index + 1);
 	}
 
 	// Start playing from MIDI file
 	this.play = function() {
 		if (!this.stopped) return;
 		this.stopped = false;
-		var track_num = track_nums[this.type];
-		var events = this.midi_file["tracks"][track_num];
-		this.find_next_event(events, 0);
+		for (var type in this.drums) {
+			var drum = this.drums[type];
+			var track_num = track_nums[type];
+			var events = this.midi_file["tracks"][track_num];
+			this.find_next_event(drum, events, 0);
+		}
 	}
 
 	// Stop playing
 	this.stop = function() {
 		this.stopped = true;
-		for (var key in note_offsets[this.type]) {
-			this.note_off(key);
+		for (var type in this.drums) {
+			var drum = this.drums[type];
+			for (var key in note_offsets[type]) {
+				drum.note_off(key);
+			}
 		}
 	}
 
