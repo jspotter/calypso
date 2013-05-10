@@ -204,13 +204,14 @@ function Drum(type) {
 	}
 
 	this.note_on = function(note) {
+		console.log(this.type + " " + note);
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
 	}
 
 	this.note_off = function(note) {
 		id = this.type + "_" + note;
-		$("#" + id).fadeTo(0, 0);
+		$("#" + id).fadeTo("fast", 0);
 	}
 }
 
@@ -240,6 +241,7 @@ function Manager(drums, midi_filename) {
 
 	this.midi_filename = midi_filename;
 	this.midi_file = {};
+	this.midi_schedule = [];
 	this.stopped = true;
 
 	// Responsible for drawing the drums correctly on screen
@@ -286,47 +288,51 @@ function Manager(drums, midi_filename) {
 	// Finds the next note on event or note off event,
 	// and schedules that event to take place after the
 	// appropriate amount of time.
-	this.find_next_event = function(drum, events, index) {
-		var delta = 0;
-		var num_events = events.length;
-		for (var i = index; i < num_events; i++) {
-			var ev = events[i];
-			delta = delta + ev.deltaTime;
-			if (ev.subtype == "noteOn" || ev.subtype == "noteOff") {
-				setTimeout(function() {
-					this_manager.handle_event(drum, events, i);
-				}, delta * 3);
-				break;
-			}
-		}
+	this.find_next_event = function(original_delta, index) {
+		if (this_manager.stopped) return;
+		if (index >= this_manager.midi_schedule.length) return;
+		
+		var delta = this_manager.midi_schedule[index]["delta"];
+		setTimeout(function() {
+			this_manager.handle_event(index);
+		}, (delta - original_delta) * 3);
 	}
 
 	// Callback for setTimeout
-	this.handle_event = function(drum, events, index) {
-		if (this.stopped) return;
+	this.handle_event = function(index) {
+		if (this_manager.stopped) return;
 		
-		// handle event
-		var ev = events[index];
-		if (ev.subtype == "noteOn") {
-			drum.note_on(ev.noteNumber);
-		} else if (ev.subtype == "noteOff") {
-			drum.note_off(ev.noteNumber);
+		var start = this_manager.midi_schedule[index];
+		var cur_delta = start["delta"];
+		
+		// handle events
+		while (true) {
+			var next = this_manager.midi_schedule[index];
+			var new_delta = next["delta"];
+			if (new_delta > cur_delta) break;
+			
+			var drum = this_manager.drums[next["drum_type"]];
+			if (drum === undefined) {
+				index++;
+				continue;
+			}
+			var note = next["note"];
+			if (next["event_type"] == "noteOn")
+				drum.note_on(note);
+			else if (next["event_type"] == "noteOff")
+				drum.note_off(note);
+			index++;
 		}
 		
 		// prepare for next event
-		this.find_next_event(drum, events, index + 1);
+		this_manager.find_next_event(cur_delta, index);
 	}
 
 	// Start playing from MIDI file
 	this.play = function() {
 		if (!this.stopped) return;
 		this.stopped = false;
-		for (var type in this.drums) {
-			var drum = this.drums[type];
-			var track_num = track_nums[type];
-			var events = this.midi_file["tracks"][track_num];
-			this.find_next_event(drum, events, 0);
-		}
+		this.find_next_event(0, 0);
 	}
 
 	// Stop playing
@@ -339,11 +345,46 @@ function Manager(drums, midi_filename) {
 			}
 		}
 	}
+	
+	// Put MIDI note events into a schedule
+	this.process_midi = function(file) {
+		var tracks = file["tracks"];
+		
+		for (var type in track_nums) {
+			var events = tracks[track_nums[type]];
+			var total_delta = 0;
+			for (var i = 0; i < events.length; i++) {
+				var ev = events[i];
+				total_delta = total_delta + ev.deltaTime;
+				if (ev.subtype == "noteOn" || ev.subtype == "noteOff") {
+					var to_insert = {
+						"delta": total_delta,
+						"drum_type": type,
+						"event_type": ev.subtype,
+						"note": ev.noteNumber
+					};
+					this_manager.midi_schedule.push(to_insert);
+				}
+			}
+		}
+		
+		this_manager.midi_schedule.sort(function(a, b) {
+			return a["delta"] - b["delta"];
+		});
+	}
 
 	// Load MIDI file and set up controls	
 	this.load_midi = function() {
 		loadRemote(this.midi_filename, function(data) {
 			this_manager.midi_file = MidiFile(data);
+			this_manager.process_midi(this_manager.midi_file);
+			
+			for (var i = 0; i < this_manager.midi_schedule.length; i++) {
+				var ev = this_manager.midi_schedule[i];
+				console.log(ev["delta"] + ": " + ev["drum_type"] + " "
+						+ ev["note"] + " " + ev["event_type"]);
+			}
+			
 			var play_button = $("<input>", {type: "button", value: "PLAY"})
 				.click(function() {
 					this_manager.play();
