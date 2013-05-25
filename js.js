@@ -142,6 +142,7 @@ function Drum(type) {
 	this.old_height = this.elem.height();
 	this.scale = 1;
 	this.click_initialized = false;
+	this.hidden = false;
 
 	// Set up this drum
 	this.setup = function(left_offset, max_width) {
@@ -184,8 +185,11 @@ function Drum(type) {
 	}
 
 	this.hide = function() {
+		if (this.hidden)
+			return;
+			
+		this.hidden = true;
 		this.elem.hide();
-
 		for (var key in this.my_notes) {
 			var id = this.type + "_" + key;
 			var note_elem = $("#" + id);
@@ -194,8 +198,11 @@ function Drum(type) {
 	}
 
 	this.show = function() {
+		if (!this.hidden)
+			return;
+	
+		this.hidden = false;
 		this.elem.show();
-
 		for (var key in this.my_notes) {
 			var id = this.type + "_" + key;
 			var note_elem = $("#" + id);
@@ -204,6 +211,9 @@ function Drum(type) {
 	}
 
 	this.note_on = function(note) {
+		if (this.hidden)
+			return;
+	
 		console.log(this.type + " " + note);
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
@@ -357,8 +367,14 @@ function Manager(drums, midi_filename) {
 				var ev = events[i];
 				total_delta = total_delta + ev.deltaTime;
 				if (ev.subtype == "noteOn" || ev.subtype == "noteOff") {
+				
+					// make note cut-offs a little early
+					var eff_total_delta = total_delta;
+					if (ev.subtype == "noteOff")
+						eff_total_delta = eff_total_delta - 10;
+						
 					var to_insert = {
-						"delta": total_delta,
+						"delta": eff_total_delta,
 						"drum_type": type,
 						"event_type": ev.subtype,
 						"note": ev.noteNumber
@@ -372,6 +388,21 @@ function Manager(drums, midi_filename) {
 			return a["delta"] - b["delta"];
 		});
 	}
+	
+	// Constructs MIDI visualization inside controls component
+	this.construct_midi_vis = function() {
+		console.log("hi");
+		console.log(this_manager.midi_schedule[this_manager.midi_schedule.length - 1].delta);
+		var new_thing = $("<div>")
+			.css("background-color", "#ffffff")
+			.css("position", "absolute")
+			.css("bottom", "20px")
+			.css("left", "0px")
+			.css("width", this_manager.midi_schedule[this_manager.midi_schedule.length - 1].delta)
+			.css("height", "140px");
+		console.log(new_thing);
+		$("body").append(new_thing);
+	}
 
 	// Load MIDI file and set up controls	
 	this.load_midi = function() {
@@ -379,11 +410,11 @@ function Manager(drums, midi_filename) {
 			this_manager.midi_file = MidiFile(data);
 			this_manager.process_midi(this_manager.midi_file);
 			
-			for (var i = 0; i < this_manager.midi_schedule.length; i++) {
+			/*for (var i = 0; i < this_manager.midi_schedule.length; i++) {
 				var ev = this_manager.midi_schedule[i];
 				console.log(ev["delta"] + ": " + ev["drum_type"] + " "
 						+ ev["note"] + " " + ev["event_type"]);
-			}
+			}*/
 			
 			var play_button = $("<input>", {type: "button", value: "PLAY"})
 				.click(function() {
@@ -393,10 +424,31 @@ function Manager(drums, midi_filename) {
 				.click(function() {
 					this_manager.stop();
 				});
+			var which_drums = [];
+			for (var drum_type in this_manager.drum_statuses) {
+				var check = $("<input>", {type: "checkbox", value: drum_type,
+						checked: "checked"})
+					.click(function() {
+						if($(this).attr("checked") == "checked") {
+							this_manager.show_drum($(this).attr("value"));
+						} else {
+							this_manager.hide_drum($(this).attr("value"));
+						}
+					});
+				which_drums.push(check);
+			}
 			$("#controls")
 				.html("")
 				.append(play_button)
 				.append(stop_button);
+			for (var i = 0; i < which_drums.length; i++) {
+				$("#controls")
+					.append("&nbsp;&nbsp;&nbsp;")
+					.append(which_drums[i].attr("value"))
+					.append(which_drums[i]);
+			}
+			
+			this_manager.construct_midi_vis();
 		});
 	}
 }
