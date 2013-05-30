@@ -231,7 +231,7 @@ function Drum(type) {
  * playback of each drum type. Also handles
  * reading and playing a MIDI file.
  */
-function Manager(drums, midi_filename) {
+function Manager(drums) {
 	var this_manager = this;
 	this.screen_width = 1000.0;
 	this.buffer = 50.0;
@@ -251,7 +251,6 @@ function Manager(drums, midi_filename) {
 		this.types_active++;
 	}
 
-	this.midi_filename = midi_filename;
 	this.midi_file = {};
 	this.midi_schedule = [];
 	this.stopped = true;
@@ -404,75 +403,136 @@ function Manager(drums, midi_filename) {
 	}
 
 	// Load MIDI file and set up controls	
-	this.load_midi = function() {
-		loadRemote(this.midi_filename, function(data) {
+	this.load_midi = function(midi_filename) {
+		console.log(midi_filename);
+		loadRemote(midi_filename, function(data) {
 			this_manager.midi_file = MidiFile(data);
+			this_manager.midi_schedule = [];
 			this_manager.process_midi(this_manager.midi_file);
-			
-			/*for (var i = 0; i < this_manager.midi_schedule.length; i++) {
-				var ev = this_manager.midi_schedule[i];
-				console.log(ev["delta"] + ": " + ev["drum_type"] + " "
-						+ ev["note"] + " " + ev["event_type"]);
-			}*/
-			
-			var play_button = $("<input>", {type: "button", value: "PLAY"})
+			$("#slider").attr("max", this_manager.midi_schedule
+					[this_manager.midi_schedule.length - 1].delta
+					* this_manager.midi_step);
+		});
+	}	
+
+	// Add controls at bottom of screen
+	this.add_controls = function() {
+		// Controller elements
+		var play_button = $("<input>", {type: "button", value: "PLAY"})
+			.click(function() {
+				this_manager.play();
+			});
+		var stop_button = $("<input>", {type: "button", value: "STOP"})
+			.click(function() {
+				this_manager.stop();
+			});
+		var which_drums = [];
+		for (var drum_type in this_manager.drum_statuses) {
+			var check = $("<input>", {type: "checkbox", value: drum_type,
+					checked: "checked"})
 				.click(function() {
-					this_manager.play();
+					if($(this).attr("checked") == "checked") {
+						this_manager.show_drum($(this).attr("value"));
+					} else {
+						this_manager.hide_drum($(this).attr("value"));
+					}
 				});
-			var stop_button = $("<input>", {type: "button", value: "STOP"})
-				.click(function() {
+			which_drums.push(check);
+		}
+		var slider = $("<input>", 
+			{
+				type: "range",
+				min: "0",
+				max: "1",
+				value: "0",
+				width: "95%",
+				id: "slider"
+			})
+			.change(function() {
+				if (this_manager.next_timeout != undefined) {
+					clearTimeout(this_manager.next_timeout);
+					this_manager.next_timeout = undefined;
+				}
+				if (!this_manager.stopped) {
 					this_manager.stop();
-				});
-			var which_drums = [];
-			for (var drum_type in this_manager.drum_statuses) {
-				var check = $("<input>", {type: "checkbox", value: drum_type,
-						checked: "checked"})
-					.click(function() {
-						if($(this).attr("checked") == "checked") {
-							this_manager.show_drum($(this).attr("value"));
-						} else {
-							this_manager.hide_drum($(this).attr("value"));
-						}
-					});
-				which_drums.push(check);
-			}
-			var slider = $("<input>", 
-				{
-					type: "range",
-					min: "0",
-					max: this_manager.midi_schedule
-						[this_manager.midi_schedule.length - 1].delta
-						* this_manager.midi_step,
-					value: "0",
-					width: "90%",
-					id: "slider"
-				})
-				.change(function() {
-					if (this_manager.next_timeout != undefined) {
-						clearTimeout(this_manager.next_timeout);
-						this_manager.next_timeout = undefined;
-					}
-					if (!this_manager.stopped) {
-						this_manager.stop();
-						this_manager.play();
-					}
-				});
+					this_manager.play();
+				}
+			});
+		
+		// MIDI upload management
+		var upload_div = $("<div>",
+			{
+				id: "upload_div"
+			})
+			.css("float", "right");
+		var midis = $("<div>",
+			{
+				id: "midis"
+			})
+			.css("float", "right");
+		var uploader = $("<input>",
+			{
+				type: "file"
+			});
+		var upload_button = $("<input>",
+			{
+				type: "button",
+				value: "Submit MIDI File"
+			})
+			.click(function() {
+				
+				//TODO do this, you shit
+				
+				
+				
+				
+				
+				
+			});
+		upload_div
+			.append(uploader)
+			.append(upload_button)
+			.append("<br>")
+			.append(midis);
 			
+		
+		// Add dat shit
+		$("#controls")
+			.html("")
+			.append(slider)
+			.append(upload_div)
+			.append("<br>")
+			.append(play_button)
+			.append(stop_button)
+			.append("<br>");
+		for (var i = 0; i < which_drums.length; i++) {
 			$("#controls")
-				.html("")
-				.append(slider)
-				.append("<br>")
-				.append(play_button)
-				.append(stop_button)
-				.append("<br>");
-			for (var i = 0; i < which_drums.length; i++) {
-				$("#controls")
-					.append(which_drums[i].attr("value"))
-					.append(which_drums[i])
-					.append("&nbsp;&nbsp;&nbsp;");
-			}
-			
-			this_manager.construct_midi_vis();
+				.append(which_drums[i].attr("value"))
+				.append(which_drums[i])
+				.append("&nbsp;&nbsp;&nbsp;");
+		}
+		
+		this_manager.construct_midi_vis();
+		this_manager.load_midis_control();
+	}
+	
+	this.load_midis_control = function() {
+		var select_button = $("<input>",
+			{
+				type: "button",
+				value: "Load MIDI File"
+			})
+			.click(function() {
+				if (!this_manager.stopped) {
+					this_manager.stop();
+				}
+				this_manager.load_midi("midi/" + $("#midiselect").attr("value"));
+			});
+		loadRemote("midis.php", function(data) {
+			console.log("got midis");
+			$("#midis")
+				.html(data)
+				.append(select_button);
 		});
 	}
 }

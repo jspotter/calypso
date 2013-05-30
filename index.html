@@ -7,10 +7,10 @@
 		<script type="text/javascript" src="js.js"></script>
 	</head>
 	<body onload="
-			var manager = new Manager(['lead', 'tenors', 'seconds'],
-					'billyjoel.mid');
+			var manager = new Manager(['lead', 'tenors', 'seconds']);
 			manager.setup_drums();
-			manager.load_midi();
+			manager.add_controls();
+			manager.load_midi('midi/dontask.mid');
 	">
 		<img id="lead" class="drum" src="lead.png">
 		<img id="tenors" class="drum" src="tenors.png">
