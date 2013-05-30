@@ -214,14 +214,13 @@ function Drum(type) {
 		if (this.hidden)
 			return;
 	
-		console.log(this.type + " " + note);
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
 	}
 
 	this.note_off = function(note) {
 		id = this.type + "_" + note;
-		$("#" + id).fadeTo("fast", 0);
+		$("#" + id).fadeTo(0, 0);
 	}
 }
 
@@ -236,6 +235,9 @@ function Manager(drums, midi_filename) {
 	var this_manager = this;
 	this.screen_width = 1000.0;
 	this.buffer = 50.0;
+	this.midi_step = 10.0;
+	this.tempo = 1.5;
+	this.next_timeout = undefined;
 
 	this.drums = {}
 	this.drum_statuses = {};
@@ -298,44 +300,44 @@ function Manager(drums, midi_filename) {
 	// Finds the next note on event or note off event,
 	// and schedules that event to take place after the
 	// appropriate amount of time.
-	this.find_next_event = function(original_delta, index) {
+	this.find_next_event = function(index) {
 		if (this_manager.stopped) return;
 		if (index >= this_manager.midi_schedule.length) return;
+		var pos = parseFloat($("#slider").attr("value"));
+		var effective_pos = pos / this_manager.midi_step;
 		
-		var delta = this_manager.midi_schedule[index]["delta"];
-		setTimeout(function() {
+		while (true) {
+			var delta = this_manager.midi_schedule[index]["delta"];
+			if (effective_pos - delta > this_manager.midi_step * this_manager.tempo) {
+				index++;
+				continue;
+			}
+			if (delta > effective_pos) break;
 			this_manager.handle_event(index);
-		}, (delta - original_delta) * 3);
+			index++;
+			if (index >= this_manager.midi_schedule.length) break;
+		}
+
+		$("#slider").val(pos + this_manager.midi_step * this_manager.tempo);
+		
+		this_manager.next_timeout = setTimeout(function() {
+			this_manager.find_next_event(index);
+		}, 1);
 	}
 
 	// Callback for setTimeout
 	this.handle_event = function(index) {
 		if (this_manager.stopped) return;
 		
-		var start = this_manager.midi_schedule[index];
-		var cur_delta = start["delta"];
-		
-		// handle events
-		while (true) {
-			var next = this_manager.midi_schedule[index];
-			var new_delta = next["delta"];
-			if (new_delta > cur_delta) break;
-			
-			var drum = this_manager.drums[next["drum_type"]];
-			if (drum === undefined) {
-				index++;
-				continue;
-			}
-			var note = next["note"];
-			if (next["event_type"] == "noteOn")
-				drum.note_on(note);
-			else if (next["event_type"] == "noteOff")
-				drum.note_off(note);
-			index++;
-		}
-		
-		// prepare for next event
-		this_manager.find_next_event(cur_delta, index);
+		var ev = this_manager.midi_schedule[index];
+		var drum = this_manager.drums[ev["drum_type"]];
+		if (drum === undefined) return;
+
+		var note = ev["note"];
+		if (ev["event_type"] == "noteOn")
+			drum.note_on(note);
+		else if (ev["event_type"] == "noteOff")
+			drum.note_off(note);
 	}
 
 	// Start playing from MIDI file
@@ -391,16 +393,13 @@ function Manager(drums, midi_filename) {
 	
 	// Constructs MIDI visualization inside controls component
 	this.construct_midi_vis = function() {
-		console.log("hi");
-		console.log(this_manager.midi_schedule[this_manager.midi_schedule.length - 1].delta);
 		var new_thing = $("<div>")
 			.css("background-color", "#ffffff")
 			.css("position", "absolute")
-			.css("bottom", "20px")
+			.css("bottom", "10px")
 			.css("left", "0px")
-			.css("width", this_manager.midi_schedule[this_manager.midi_schedule.length - 1].delta)
-			.css("height", "140px");
-		console.log(new_thing);
+			.css("width", "100%")
+			.css("height", "80px");
 		$("body").append(new_thing);
 	}
 
@@ -437,15 +436,40 @@ function Manager(drums, midi_filename) {
 					});
 				which_drums.push(check);
 			}
+			var slider = $("<input>", 
+				{
+					type: "range",
+					min: "0",
+					max: this_manager.midi_schedule
+						[this_manager.midi_schedule.length - 1].delta
+						* this_manager.midi_step,
+					value: "0",
+					width: "90%",
+					id: "slider"
+				})
+				.change(function() {
+					if (this_manager.next_timeout != undefined) {
+						clearTimeout(this_manager.next_timeout);
+						this_manager.next_timeout = undefined;
+					}
+					if (!this_manager.stopped) {
+						this_manager.stop();
+						this_manager.play();
+					}
+				});
+			
 			$("#controls")
 				.html("")
+				.append(slider)
+				.append("<br>")
 				.append(play_button)
-				.append(stop_button);
+				.append(stop_button)
+				.append("<br>");
 			for (var i = 0; i < which_drums.length; i++) {
 				$("#controls")
-					.append("&nbsp;&nbsp;&nbsp;")
 					.append(which_drums[i].attr("value"))
-					.append(which_drums[i]);
+					.append(which_drums[i])
+					.append("&nbsp;&nbsp;&nbsp;");
 			}
 			
 			this_manager.construct_midi_vis();
