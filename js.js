@@ -175,8 +175,13 @@ function Drum(type) {
 
 			if (!this.click_initialized) {
 				note_elem
-					.click(function() {
+					.mousedown(function() {
 						this_drum.note_on($(this).attr("name"));
+					})
+					.mouseup(function() {
+						this_drum.note_off($(this).attr("name"));
+					})
+					.mouseout(function() {
 						this_drum.note_off($(this).attr("name"));
 					});
 			}
@@ -260,6 +265,7 @@ function Manager(drums) {
 	this.midi_step = 10.0;
 	this.tempo = 1.5;
 	this.next_timeout = undefined;
+	this.status_timeout = undefined;
 
 	this.drums = {}
 	this.drum_statuses = {};
@@ -427,6 +433,7 @@ function Manager(drums) {
 	// Load MIDI file and set up controls	
 	this.load_midi = function(midi_filename) {
 		console.log(midi_filename);
+		this_manager.set_status_message("Loading " + midi_filename + "...&nbsp;<img src='loading.gif' width='20px' height='20px'></img>", false);
 		loadRemote(midi_filename, function(data) {
 			this_manager.midi_file = MidiFile(data);
 			this_manager.midi_schedule = [];
@@ -434,6 +441,8 @@ function Manager(drums) {
 			$("#slider").attr("max", this_manager.midi_schedule
 					[this_manager.midi_schedule.length - 1].delta
 					* this_manager.midi_step);
+			this_manager.set_status_message("Successfully loaded "
+				+ midi_filename + "!", true);
 		});
 	}	
 
@@ -498,37 +507,57 @@ function Manager(drums) {
 			{
 				id: "upload_div"
 			})
-			.css("float", "right");
+			.css("float", "right")
+			.css("padding-right", "40px");
 		var midis = $("<div>",
 			{
 				id: "midis"
 			})
 			.css("float", "right");
+		var upload_form = $("<form>",
+			{
+				id: "upload_form",
+				enctype: "multipart/form-data",
+				method: "POST",
+				action: "upload.php"
+			});
 		var uploader = $("<input>",
 			{
-				type: "file"
+				type: "file",
+				name: "midifile",
+				id: "midifile"
 			});
 		var upload_button = $("<input>",
 			{
-				type: "button",
+				type: "submit",
 				value: "Submit MIDI File"
-			})
-			.click(function() {
-				
-				//TODO do this, you shit
-				
-				
-				
-				
-				
-				
 			});
-		upload_div
+		upload_form
 			.append(uploader)
 			.append(upload_button)
-			.append("<br>")
-			.append(midis);
+			.submit(function() {
+				this_manager.set_status_message("Submitting...&nbsp;<img src='loading.gif' width='20px' height='20px'></img>", false);
+				$(this).ajaxSubmit(
+					{
+						success: function(data) {
+							this_manager.set_status_message(data, false);
+							this_manager.load_midis_control();
+						}
+					}
+				);
+				return false;
+			});
 			
+		var status_div = $("<div>",
+			{
+				id: "status"
+			})
+			.css("float", "right");
+		upload_div
+			.append(upload_form)
+			.append(midis)
+			.append("<br>")
+			.append(status_div);
 		
 		// Add dat shit
 		$("#controls")
@@ -567,12 +596,23 @@ function Manager(drums) {
 				$("#slider").attr("value", "0");
 				this_manager.load_midi("midi/" + $("#midiselect").attr("value"));
 			});
+		$("#midis").html("Loading file list...&nbsp;<img src='loading.gif' width='20px' height='20px'></img>");
 		loadRemote("midis.php", function(data) {
-			console.log("got midis");
 			$("#midis")
 				.html(data)
 				.append(select_button);
 		});
+	}
+	
+	this.set_status_message = function(message, clear) {
+		$("#status").html(message);
+		if (this_manager.status_timeout != undefined)
+			clearTimeout(this_manager.status_timeout);
+		if (clear) {
+			this_manager.status_timeout = setTimeout(function() {
+				$("#status").html("");
+			}, 5000);
+		}
 	}
 }
 

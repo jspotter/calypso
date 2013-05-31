@@ -1,14 +1,14 @@
+<?php
+	include_once ("funcs.php");
+?>
+
 <select id="midiselect">
 	<?php
-		if ($handle = opendir("midi")) {
-			while (($entry = readdir($handle)) !== false) {
-				if ($entry == "." or $entry == "..")
-					continue;
+		$midi_filenames = get_midi_filenames();
+		foreach ($midi_filenames as $name) {
 	?>
-				<option value="<?= $entry ?>"><?= $entry ?></option>
+			<option value="<?= $name ?>"><?= $name ?></option>
 	<?php
-			}
-			closedir($handle);
 		}
 	?>
 </select>
