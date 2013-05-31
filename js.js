@@ -216,6 +216,28 @@ function Drum(type) {
 	
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
+		
+		// Play sound
+		try
+		{
+			var sound = document.createElement("audio");
+			sound.setAttribute("controls", "controls");
+			sound.setAttribute("style", "display: none");
+
+			sound.src = "sounds/" + note + ".mp3";
+			sound.autoplay = true;
+			sound.loop = false;
+			sound.volume = 0.05;
+	
+			document.body.appendChild(sound);
+			setTimeout(function() {
+				document.body.removeChild(sound);
+			}, 2000);
+		}
+		catch(err)
+		{
+			console.log(err);
+		}
 	}
 
 	this.note_off = function(note) {
@@ -445,7 +467,7 @@ function Manager(drums) {
 				min: "0",
 				max: "1",
 				value: "0",
-				width: "95%",
+				width: "80%",
 				id: "slider"
 			})
 			.change(function() {
@@ -457,6 +479,18 @@ function Manager(drums) {
 					this_manager.stop();
 					this_manager.play();
 				}
+			});
+		var tempo = $("<input>",
+			{
+				type: "range",
+				min: "100",
+				max: "300",
+				value: "150",
+				width: "80%",
+				id: "tempo"
+			})
+			.change(function() {
+				this_manager.tempo = $(this).val() / 100.0;
 			});
 		
 		// MIDI upload management
@@ -499,7 +533,11 @@ function Manager(drums) {
 		// Add dat shit
 		$("#controls")
 			.html("")
+			.append("Position:&nbsp;")
 			.append(slider)
+			.append("<br>")
+			.append("Tempo:&nbsp;&nbsp;")
+			.append(tempo)
 			.append(upload_div)
 			.append("<br>")
 			.append(play_button)
@@ -512,7 +550,7 @@ function Manager(drums) {
 				.append("&nbsp;&nbsp;&nbsp;");
 		}
 		
-		this_manager.construct_midi_vis();
+		//this_manager.construct_midi_vis();
 		this_manager.load_midis_control();
 	}
 	
@@ -526,6 +564,7 @@ function Manager(drums) {
 				if (!this_manager.stopped) {
 					this_manager.stop();
 				}
+				$("#slider").attr("value", "0");
 				this_manager.load_midi("midi/" + $("#midiselect").attr("value"));
 			});
 		loadRemote("midis.php", function(data) {
