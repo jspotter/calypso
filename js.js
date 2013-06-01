@@ -125,6 +125,34 @@ var num_drums = {
 };
 
 /*********************************
+ * Helper Functions
+ */
+ 
+// Plays the appropriate MIDI sound
+function play_sound(note) {
+	try
+	{
+		var sound = document.createElement("audio");
+		sound.setAttribute("controls", "controls");
+		sound.setAttribute("style", "display: none");
+
+		sound.src = "sounds/" + note + ".mp3";
+		sound.autoplay = true;
+		sound.loop = false;
+		sound.volume = 0.05;
+
+		document.body.appendChild(sound);
+		setTimeout(function() {
+			document.body.removeChild(sound);
+		}, 2000);
+	}
+	catch(err)
+	{
+		console.log(err);
+	}
+}
+
+/*********************************
  * Class Drum
  * ----------
  * Represents a single steel drum part.
@@ -222,27 +250,7 @@ function Drum(type) {
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
 		
-		// Play sound
-		try
-		{
-			var sound = document.createElement("audio");
-			sound.setAttribute("controls", "controls");
-			sound.setAttribute("style", "display: none");
-
-			sound.src = "sounds/" + note + ".mp3";
-			sound.autoplay = true;
-			sound.loop = false;
-			sound.volume = 0.05;
-	
-			document.body.appendChild(sound);
-			setTimeout(function() {
-				document.body.removeChild(sound);
-			}, 2000);
-		}
-		catch(err)
-		{
-			console.log(err);
-		}
+		play_sound(note);
 	}
 
 	this.note_off = function(note) {
@@ -266,6 +274,9 @@ function Manager(drums) {
 	this.tempo = 1.5;
 	this.next_timeout = undefined;
 	this.status_timeout = undefined;
+	this.met_timeout = undefined;
+	this.ticks_per_beat = undefined;
+	this.click_track = true;
 
 	this.drums = {}
 	this.drum_statuses = {};
@@ -323,16 +334,28 @@ function Manager(drums) {
 			this.setup_drums();
 		}
 	}
+	
+	// Plays a metronome sound
+	this.play_metronome = function() {
+		this_manager.met_timeout = setTimeout(function() {
+			play_sound("0");
+			$("#met_vis1").fadeTo(0, 1);
+			$("#met_vis2").fadeTo(0, 1);
+			$("#met_vis1").fadeTo("fast", 0);
+			$("#met_vis2").fadeTo("fast", 0);
+		}, 100);
+	}
 
 	// Finds the next note on event or note off event,
 	// and schedules that event to take place after the
 	// appropriate amount of time.
-	this.find_next_event = function(index) {
+	this.find_next_event = function(index, should_click) {
 		if (this_manager.stopped) return;
 		if (index >= this_manager.midi_schedule.length) return;
 		var pos = parseFloat($("#slider").attr("value"));
 		var effective_pos = pos / this_manager.midi_step;
 		
+		// play notes
 		while (true) {
 			var delta = this_manager.midi_schedule[index]["delta"];
 			if (effective_pos - delta > this_manager.midi_step * this_manager.tempo) {
@@ -344,11 +367,30 @@ function Manager(drums) {
 			index++;
 			if (index >= this_manager.midi_schedule.length) break;
 		}
+		
+		// play metronome
+		if (should_click) {
+			this_manager.play_metronome();
+		}
+		
+		var new_pos = pos + this_manager.midi_step * this_manager.tempo;
+		var effective_new_pos = new_pos / this_manager.midi_step;
+		var next_click = false;
+		
+		// determine next click
+		if (this_manager.click_track) {
+			for (var i = pos + 1; i <= new_pos; i++) {
+				if (i % (this_manager.ticks_per_beat * this_manager.midi_step) == 0) {
+					next_click = true;
+					break;
+				}
+			}
+		}
 
-		$("#slider").val(pos + this_manager.midi_step * this_manager.tempo);
+		$("#slider").val(new_pos);
 		
 		this_manager.next_timeout = setTimeout(function() {
-			this_manager.find_next_event(index);
+			this_manager.find_next_event(index, next_click);
 		}, 1);
 	}
 
@@ -371,12 +413,23 @@ function Manager(drums) {
 	this.play = function() {
 		if (!this.stopped) return;
 		this.stopped = false;
-		this.find_next_event(0, 0);
+		this.find_next_event(0, true);
 	}
 
 	// Stop playing
 	this.stop = function() {
 		this.stopped = true;
+		
+		if (this_manager.next_timeout != undefined) {
+			clearTimeout(this_manager.next_timeout);
+			this_manager.next_timeout = undefined;
+		}
+		
+		if (this_manager.met_timeout != undefined) {
+			clearTimeout(this_manager.met_timeout);
+			this_manager.met_timeout = undefined;
+		}
+		
 		for (var type in this.drums) {
 			var drum = this.drums[type];
 			for (var key in note_offsets[type]) {
@@ -388,6 +441,9 @@ function Manager(drums) {
 	// Put MIDI note events into a schedule
 	this.process_midi = function(file) {
 		var tracks = file["tracks"];
+		var header = file["header"];
+		this_manager.ticks_per_beat = header["ticksPerBeat"];
+		console.log(this_manager.ticks_per_beat);
 		
 		for (var type in track_nums) {
 			var events = tracks[track_nums[type]];
@@ -429,10 +485,39 @@ function Manager(drums) {
 			.css("height", "80px");
 		$("body").append(new_thing);
 	}
+	
+	// Constructs a div to flash in time with the metronome
+	this.construct_met_vis = function() {
+		var met1 = $("<div>",
+			{
+				id: "met_vis1"
+			}
+		)
+			.css("background-color", "#000000")
+			.css("position", "absolute")
+			.css("top", "0px")
+			.css("left", "0px")
+			.css("width", "100%")
+			.css("height", "10px")
+			.css("display", "none");
+		var met2 = $("<div>",
+			{
+				id: "met_vis2"
+			}
+		)
+			.css("background-color", "#000000")
+			.css("position", "absolute")
+			.css("bottom", "0px")
+			.css("left", "0px")
+			.css("width", "100%")
+			.css("height", "10px")
+			.css("display", "none");
+		$("body").append(met1);
+		$("body").append(met2);
+	}
 
 	// Load MIDI file and set up controls	
 	this.load_midi = function(midi_filename) {
-		console.log(midi_filename);
 		this_manager.set_status_message("Loading " + midi_filename + "...&nbsp;<img src='loading.gif' width='20px' height='20px'></img>", false);
 		loadRemote(midi_filename, function(data) {
 			this_manager.midi_file = MidiFile(data);
@@ -457,7 +542,7 @@ function Manager(drums) {
 			.click(function() {
 				this_manager.stop();
 			});
-		var which_drums = [];
+		var checks = [];
 		for (var drum_type in this_manager.drum_statuses) {
 			var check = $("<input>", {type: "checkbox", value: drum_type,
 					checked: "checked"})
@@ -468,8 +553,18 @@ function Manager(drums) {
 						this_manager.hide_drum($(this).attr("value"));
 					}
 				});
-			which_drums.push(check);
+			checks.push(check);
 		}
+		var click_check = $("<input>", {type: "checkbox", value: "metronome",
+				checked: "checked"})
+				.click(function() {
+					if($(this).attr("checked") == "checked") {
+						this_manager.click_track = true;
+					} else {
+						this_manager.click_track = false;
+					}
+				});
+		checks.push(click_check);
 		var slider = $("<input>", 
 			{
 				type: "range",
@@ -480,10 +575,6 @@ function Manager(drums) {
 				id: "slider"
 			})
 			.change(function() {
-				if (this_manager.next_timeout != undefined) {
-					clearTimeout(this_manager.next_timeout);
-					this_manager.next_timeout = undefined;
-				}
 				if (!this_manager.stopped) {
 					this_manager.stop();
 					this_manager.play();
@@ -572,14 +663,15 @@ function Manager(drums) {
 			.append(play_button)
 			.append(stop_button)
 			.append("<br>");
-		for (var i = 0; i < which_drums.length; i++) {
+		for (var i = 0; i < checks.length; i++) {
 			$("#controls")
-				.append(which_drums[i].attr("value"))
-				.append(which_drums[i])
+				.append(checks[i].attr("value"))
+				.append(checks[i])
 				.append("&nbsp;&nbsp;&nbsp;");
 		}
 		
 		//this_manager.construct_midi_vis();
+		this_manager.construct_met_vis();
 		this_manager.load_midis_control();
 	}
 	
