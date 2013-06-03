@@ -113,7 +113,7 @@ var note_offsets = {
 	"triples": {
 		"47": {"left": 125, "top": 228},
 	
-		"48": {"left": 260, "top": 160},
+		"48": {"left": 259, "top": 159},
 		"49": {"left": 430, "top": 252},
 		"50": {"left": 12, "top": 127},
 		"51": {"left": 267, "top": 6},
@@ -203,15 +203,16 @@ function Drum(type) {
 	this.hidden = false;
 
 	// Set up this drum
-	this.setup = function(left_offset, max_width) {
-		var new_scale = Math.min(1, max_width / this.old_width);
+	this.setup = function(top_offset, left_offset, max_width, max_height) {
+		var new_width_scale = Math.min(1, max_width / this.old_width);
+		var new_height_scale = Math.min(1, max_height / this.old_height);
+		var new_scale = Math.min(new_width_scale, new_height_scale);
 		var scale_by = new_scale / this.scale;
 		this.scale = new_scale;
 		this.elem.width(this.elem.width() * scale_by);
 
-		var offset = this.elem.offset();
 		this.elem.offset({
-			"top": offset.top,
+			"top": top_offset,
 			"left": left_offset
 		});
 		offset = this.elem.offset();
@@ -310,38 +311,85 @@ function Manager(drums) {
 
 	this.drums = {}
 	this.drum_statuses = {};
-	this.drums_active = 0;
-	this.types_active = 0;
 	for (var i = 0; i < drums.length; i++) {
 		var drum_type = drums[i];
 		this.drums[drum_type] = new Drum(drum_type);
 		this.drum_statuses[drum_type] = true;
-		this.drums_active += num_drums[drum_type];
-		this.types_active++;
 	}
 
 	this.midi_file = {};
 	this.midi_schedule = [];
 	this.stopped = true;
+	
+	// Helper function to compute offsets for a row of drums
+	this.compute_offsets = function(drum_plan, cur_row, highest_row) {
+		var total_drums = 0;
+		var total_types = 0;
+		for (var i in cur_row) {
+			var drum_type = cur_row[i];
+			total_drums += num_drums[drum_type];
+			total_types++;
+		}
+		var max_width = (this.screen_width - this.buffer * (total_types - 1)) /
+				total_drums;
+		
+		var drums_so_far = 0;
+		var types_so_far = 0;
+		for (var i in cur_row) {
+			var drum_type = cur_row[i];
+			var my_num_drums = num_drums[drum_type];
+			
+			drum_plan[drum_type] = 
+				[
+					highest_row,
+					(drums_so_far * max_width) + (types_so_far * this.buffer),
+					max_width * my_num_drums
+				];
+					
+			drums_so_far += my_num_drums;
+			types_so_far++;
+		}
+	}
 
 	// Responsible for drawing the drums correctly on screen
 	this.setup_drums = function() {
-		var max_width = (this.screen_width - this.buffer * (this.types_active - 1)) /
-				this.drums_active;
+		var drum_plan = {};
+		var highest_row = 0;
 		var drums_before = 0;
-		var types_before = 0;
+		var cur_row = [];
+		
+		// Establish width plan first
 		for (var drum_type in this.drum_statuses) {
 			var status = this.drum_statuses[drum_type];
 			var my_num_drums = num_drums[drum_type];
-			if (status) {	
-				this.drums[drum_type].show();
-				this.drums[drum_type].setup(drums_before * max_width + 
-						types_before * this.buffer,
-						my_num_drums * max_width);
+			var my_drum = this.drums[drum_type];
+			if (status) {
+				if (drums_before + my_num_drums > 6) {
+					this.compute_offsets(drum_plan, cur_row, highest_row);
+					highest_row++;
+					cur_row = [];
+				}
+				
 				drums_before += my_num_drums;
-				types_before++;	
+				cur_row.push(drum_type);
+			}
+		}
+		this.compute_offsets(drum_plan, cur_row, highest_row);
+		
+		var max_height = 500 / (highest_row + 1);
+		
+		// Set up drums
+		for (var drum_type in this.drum_statuses) {
+			var status = this.drum_statuses[drum_type];
+			var my_drum = this.drums[drum_type];
+			if (status) {
+				my_drum.show();
+				my_drum.setup(drum_plan[drum_type][0] * max_height,
+						drum_plan[drum_type][1],
+						drum_plan[drum_type][2],
+						max_height);
 			} else {
-				this.drums[drum_type].hide();
+				my_drum.hide();
 			}
 		}
 	}
@@ -350,8 +398,6 @@ function Manager(drums) {
 	this.show_drum = function(type) {
 		if (!this.drum_statuses[type]) {
 			this.drum_statuses[type] = true;
-			this.drums_active += num_drums[type];
-			this.types_active++;
 			this.setup_drums();
 		}
 	}
@@ -359,8 +405,6 @@ function Manager(drums) {
 	this.hide_drum = function(type) {
 		if (this.drum_statuses[type]) {
 			this.drum_statuses[type] = false;
-			this.drums_active -= num_drums[type];
-			this.types_active--;
 			this.setup_drums();
 		}
 	}
@@ -385,6 +429,8 @@ function Manager(drums) {
 		var pos = parseFloat($("#slider").attr("value"));
 		var effective_pos = pos / this_manager.midi_step;
 		
+		//console.log(new Date().getMilliseconds());
+		
 		// play notes
 		while (true) {
 			var delta = this_manager.midi_schedule[index]["delta"];
@@ -398,10 +444,14 @@ function Manager(drums) {
 			if (index >= this_manager.midi_schedule.length) break;
 		}
 		
+		//console.log("  " + new Date().getMilliseconds());
+		
 		// play metronome
 		if (should_click) {
 			this_manager.play_metronome();
 		}
+		
+		//console.log("  " + new Date().getMilliseconds());
 		
 		var new_pos = pos + this_manager.midi_step * this_manager.tempo;
 		var effective_new_pos = new_pos / this_manager.midi_step;
@@ -416,6 +466,8 @@ function Manager(drums) {
 				}
 			}
 		}
+		
+		//console.log("  " + new Date().getMilliseconds());
 
 		$("#slider").val(new_pos);
 		
@@ -473,7 +525,6 @@ function Manager(drums) {
 		var tracks = file["tracks"];
 		var header = file["header"];
 		this_manager.ticks_per_beat = header["ticksPerBeat"];
-		console.log(this_manager.ticks_per_beat);
 		
 		for (var type in track_nums) {
 			var events = tracks[track_nums[type]];
