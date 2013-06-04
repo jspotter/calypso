@@ -137,6 +137,40 @@ var note_offsets = {
 		"68": {"left": 125, "top": 212},
 		"69": {"left": 330, "top": 120},
 		"70": {"left": 543, "top": 231}
+	},
+
+	// NEW TRIPLES
+	"new_triples": {
+		"46": {"left": 575, "top": 183},
+		"47": {"left": 26, "top": 123},
+	
+		"48": {"left": 259, "top": 159},
+		"49": {"left": 425, "top": 267},
+		"50": {"left": 81, "top": 263},
+		"51": {"left": 214, "top": 21},
+		"52": {"left": 426, "top": 136},
+		"53": {"left": 138, "top": 132},
+		"54": {"left": 354, "top": 19},
+		"55": {"left": 528, "top": 135},
+		"56": {"left": 9, "top": 245},
+		"57": {"left": 279, "top": 7},
+		"58": {"left": 539, "top": 280},
+		"59": {"left": 5, "top": 174},
+	
+		"60": {"left": 363, "top": 118},
+		"61": {"left": 416, "top": 204},
+		"62": {"left": 165, "top": 202},
+		"63": {"left": 215, "top": 118},
+		"64": {"left": 496, "top": 233},
+		"65": {"left": 127, "top": 208},
+		"66": {"left": 340, "top": 106},
+		"67": {"left": 530, "top": 216},
+		"68": {"left": 94, "top": 244},
+		"69": {"left": 306, "top": 79},
+		"70": {"left": 527, "top": 254},
+		"71": {"left": 91, "top": 204},
+		
+		"72": {"left": 296, "top": 114}
 	}
 };
 
@@ -144,14 +178,16 @@ var track_nums = {
 	"lead": 1,
 	"tenors": 2,
 	"seconds": 3,
-	"triples": 4
+	"triples": 4,
+	"new_triples": 4
 };
 
 var num_drums = {
 	"lead": 1,
 	"tenors": 2,
 	"seconds": 2,
-	"triples": 3
+	"triples": 3,
+	"new_triples": 3
 };
 
 /*********************************
@@ -365,9 +401,13 @@ function Manager(drums) {
 			var my_drum = this.drums[drum_type];
 			if (status) {
 				if (drums_before + my_num_drums > 6) {
+					console.log("new row on " + drum_type);
+					console.log("  " + drums_before);
+					console.log("  " + my_num_drums);
 					this.compute_offsets(drum_plan, cur_row, highest_row);
 					highest_row++;
 					cur_row = [];
+					drums_before = 0;
 				}
 				
 				drums_before += my_num_drums;
