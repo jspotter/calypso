@@ -11,7 +11,9 @@
 			var manager = new Manager(['lead', 'tenors', 'seconds', 'triples', 'new_triples']);
 			manager.setup_drums();
 			manager.add_controls();
-			manager.load_midi('midi/dontask.mid');
+			window.onresize = function() {
+				manager.setup_drums();
+			}
 	">
 		<img id="lead" class="drum" src="lead.png">
 		<img id="tenors" class="drum" src="tenors.png">

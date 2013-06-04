@@ -229,7 +229,6 @@ function play_sound(note) {
 function Drum(type) {
 	var this_drum = this;
 	this.type = type;
-	this.midi_file = {};
 	this.my_notes = note_offsets[this.type];
 	this.elem = $("#" + this.type);
 	this.old_width = this.elem.width();
@@ -249,7 +248,7 @@ function Drum(type) {
 
 		this.elem.offset({
 			"top": top_offset,
-			"left": left_offset
+			"left": left_offset + ((max_width - this.elem.width()) / 2)
 		});
 		offset = this.elem.offset();
 		
@@ -335,7 +334,6 @@ function Drum(type) {
  */
 function Manager(drums) {
 	var this_manager = this;
-	this.screen_width = 1000.0;
 	this.buffer = 50.0;
 	this.midi_step = 10.0;
 	this.tempo = 1.5;
@@ -353,8 +351,8 @@ function Manager(drums) {
 		this.drum_statuses[drum_type] = true;
 	}
 
-	this.midi_file = {};
-	this.midi_schedule = [];
+	this.midi_file = undefined;
+	this.midi_schedule = undefined;
 	this.stopped = true;
 	
 	// Helper function to compute offsets for a row of drums
@@ -366,7 +364,7 @@ function Manager(drums) {
 			total_drums += num_drums[drum_type];
 			total_types++;
 		}
-		var max_width = (this.screen_width - this.buffer * (total_types - 1)) /
+		var max_width = (window.innerWidth - this.buffer * (total_types - 1)) /
 				total_drums;
 		
 		var drums_so_far = 0;
@@ -401,9 +399,6 @@ function Manager(drums) {
 			var my_drum = this.drums[drum_type];
 			if (status) {
 				if (drums_before + my_num_drums > 6) {
-					console.log("new row on " + drum_type);
-					console.log("  " + drums_before);
-					console.log("  " + my_num_drums);
 					this.compute_offsets(drum_plan, cur_row, highest_row);
 					highest_row++;
 					cur_row = [];
@@ -416,7 +411,8 @@ function Manager(drums) {
 		}
 		this.compute_offsets(drum_plan, cur_row, highest_row);
 		
-		var max_height = 500 / (highest_row + 1);
+		var max_height = (window.innerHeight - $("#controls").height() - 30)
+				/ (highest_row + 1);
 		
 		// Set up drums
 		for (var drum_type in this.drum_statuses) {
@@ -424,7 +420,7 @@ function Manager(drums) {
 			var my_drum = this.drums[drum_type];
 			if (status) {
 				my_drum.show();
-				my_drum.setup(drum_plan[drum_type][0] * max_height,
+				my_drum.setup(drum_plan[drum_type][0] * max_height + 10,
 						drum_plan[drum_type][1],
 						drum_plan[drum_type][2],
 						max_height);
@@ -469,7 +465,7 @@ function Manager(drums) {
 		var pos = parseFloat($("#slider").attr("value"));
 		var effective_pos = pos / this_manager.midi_step;
 		
-		//console.log(new Date().getMilliseconds());
+		var first = new Date().getMilliseconds();
 		
 		// play notes
 		while (true) {
@@ -479,19 +475,21 @@ function Manager(drums) {
 				continue;
 			}
 			if (delta > effective_pos) break;
-			this_manager.handle_event(index);
+			setTimeout(function(my_index) {
+				this_manager.handle_event(my_index);
+			}, 0, index);
 			index++;
 			if (index >= this_manager.midi_schedule.length) break;
 		}
 		
-		//console.log("  " + new Date().getMilliseconds());
+		var second = new Date().getMilliseconds();
 		
 		// play metronome
 		if (should_click) {
 			this_manager.play_metronome();
 		}
 		
-		//console.log("  " + new Date().getMilliseconds());
+		var third = new Date().getMilliseconds();
 		
 		var new_pos = pos + this_manager.midi_step * this_manager.tempo;
 		var effective_new_pos = new_pos / this_manager.midi_step;
@@ -507,7 +505,14 @@ function Manager(drums) {
 			}
 		}
 		
-		//console.log("  " + new Date().getMilliseconds());
+		var fourth = new Date().getMilliseconds();
+
+		if (fourth - first > 1) {
+			console.log(first);
+			console.log("  " + second);
+			console.log("  " + third);
+			console.log("  " + fourth);
+		}
 
 		$("#slider").val(new_pos);
 		
@@ -516,7 +521,7 @@ function Manager(drums) {
 		}, 1);
 	}
 
-	// Callback for setTimeout
+	// Handles single event
 	this.handle_event = function(index) {
 		if (this_manager.stopped) return;
 		
@@ -531,8 +536,20 @@ function Manager(drums) {
 			drum.note_off(note);
 	}
 
+	// Handles multiple events
+	this.handle_events = function(indices) {
+		for (var i in indices) {
+			var index = indicies[i];
+			this.handle_event(index);
+		}
+	}
+
 	// Start playing from MIDI file
 	this.play = function() {
+		if (this.midi_file == undefined) {
+			this_manager.set_status_message("No MIDI file loaded!", true);
+			return;
+		}
 		if (!this.stopped) return;
 		this.stopped = false;
 		this.find_next_event(0, true);
@@ -753,7 +770,7 @@ function Manager(drums) {
 					{
 						success: function(data) {
 							this_manager.set_status_message(data, false);
-							this_manager.load_midis_control();
+							this_manager.load_midis_control(false);
 						}
 					}
 				);
@@ -793,12 +810,13 @@ function Manager(drums) {
 		
 		//this_manager.construct_midi_vis();
 		this_manager.construct_met_vis();
-		this_manager.load_midis_control();
+		this_manager.load_midis_control(true);
 	}
 	
-	this.load_midis_control = function() {
+	this.load_midis_control = function(should_load_midi) {
 		var select_button = $("<input>",
 			{
+				id: "midiloader",
 				type: "button",
 				value: "Load MIDI File"
 			})
@@ -814,6 +832,8 @@ function Manager(drums) {
 			$("#midis")
 				.html(data)
 				.append(select_button);
+			if (should_load_midi)
+				select_button.click();
 		});
 	}
 	
