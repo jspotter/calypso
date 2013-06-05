@@ -191,36 +191,6 @@ var num_drums = {
 };
 
 /*********************************
- * Helper Functions
- */
- 
-// Plays the appropriate MIDI sound
-function play_sound(note) {
-	try
-	{
-		var sound = document.createElement("audio");
-		sound.setAttribute("controls", "controls");
-		sound.setAttribute("style", "display: none");
-
-		sound.src = "sounds/" + note + ".mp3";
-		sound.autoplay = true;
-		sound.loop = false;
-		sound.volume = 0.05;
-		if (note == 0)
-			sound.volume = 0.2;
-
-		document.body.appendChild(sound);
-		setTimeout(function() {
-			document.body.removeChild(sound);
-		}, 2000);
-	}
-	catch(err)
-	{
-		console.log(err);
-	}
-}
-
-/*********************************
  * Class Drum
  * ----------
  * Represents a single steel drum part.
@@ -320,7 +290,7 @@ function Drum(type, manager) {
 		$("#" + id).fadeTo(0, 1);
 		
 		if (this.manager.do_play_sound)
-			play_sound(note);
+			this.manager.play_sound(note);
 	}
 
 	this.note_off = function(note) {
@@ -359,6 +329,8 @@ function Manager(drums) {
 	this.midi_file = undefined;
 	this.midi_schedule = undefined;
 	this.stopped = true;
+	this.sound_map = {};
+	this.sound_redundancy = 10;
 	
 	// Helper function to compute offsets for a row of drums
 	this.compute_offsets = function(drum_plan, cur_row, highest_row) {
@@ -454,7 +426,7 @@ function Manager(drums) {
 	this.play_metronome = function() {
 		this_manager.met_timeout = setTimeout(function() {
 			if (this_manager.do_play_sound)
-				play_sound("0");
+				this_manager.play_sound("0");
 			$("#met_vis1").fadeTo(0, 1);
 			$("#met_vis2").fadeTo(0, 1);
 			$("#met_vis1").fadeTo("fast", 0);
@@ -828,7 +800,8 @@ function Manager(drums) {
 		this_manager.construct_met_vis();
 		this_manager.load_midis_control(true);
 	}
-	
+
+	// Loads the part of controls that uploads MIDI files
 	this.load_midis_control = function(should_load_midi) {
 		var select_button = $("<input>",
 			{
@@ -853,6 +826,7 @@ function Manager(drums) {
 		});
 	}
 	
+	// Sets text of status message field in controls
 	this.set_status_message = function(message, clear) {
 		$("#status").html(message);
 		if (this_manager.status_timeout != undefined)
@@ -861,6 +835,50 @@ function Manager(drums) {
 			this_manager.status_timeout = setTimeout(function() {
 				$("#status").html("");
 			}, 5000);
+		}
+	}
+
+	// Pre-emptively populates document with audio tags for sounds
+	this.add_sound_elems = function() {
+		for (var note = 0; note <= 88; note++) {
+			if (note > 0 && note < 46)
+				continue;
+			
+			var sound_object = {"index": 0, "elems": []};
+			for (var i = 0; i < this_manager.sound_redundancy; i++) {
+				try
+				{
+					var sound = document.createElement("audio");
+					sound.setAttribute("controls", "controls");
+					sound.setAttribute("style", "display: none");
+
+					sound.src = "sounds/wav/" + note + ".wav";
+					sound.autoplay = false;
+					sound.loop = false;
+					sound.volume = 0.05;
+					if (note == 0)
+						sound.volume = 0.2;
+
+					document.body.appendChild(sound);
+					sound_object["elems"].push(sound);
+				}
+				catch(err)
+				{
+					console.log(err);
+				}
+			}
+			this_manager.sound_map[note.toString()] = sound_object;
+		}
+	}
+
+	// Plays sound
+	this.play_sound = function(note) {
+		var sound_object = this_manager.sound_map[note];
+		if (sound_object != undefined) {
+			var sound_elem = sound_object["elems"][sound_object["index"]];
+			sound_object["index"] = (sound_object["index"] + 1) % this_manager.sound_redundancy;
+			sound_elem.currentTime = 0;
+			sound_elem.play();
 		}
 	}
 }

@@ -12,6 +12,7 @@
 			var manager = new Manager(['lead', 'tenors', 'seconds', 'triples', 'new_triples']);
 			manager.setup_drums();
 			manager.add_controls();
+			manager.add_sound_elems();
 			window.onresize = function() {
 				manager.setup_drums();
 			}
