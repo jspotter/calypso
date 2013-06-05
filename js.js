@@ -636,14 +636,18 @@ function Manager(drums) {
 	this.load_midi = function(midi_filename) {
 		this_manager.set_status_message("Loading " + midi_filename + "...&nbsp;<img src='loading.gif' width='20px' height='20px'></img>", false);
 		loadRemote(midi_filename, function(data) {
-			this_manager.midi_file = MidiFile(data);
-			this_manager.midi_schedule = [];
-			this_manager.process_midi(this_manager.midi_file);
-			$("#slider").attr("max", this_manager.midi_schedule
-					[this_manager.midi_schedule.length - 1].delta
-					* this_manager.midi_step);
-			this_manager.set_status_message("Successfully loaded "
-				+ midi_filename + "!", true);
+			try {
+				this_manager.midi_file = MidiFile(data);
+				this_manager.midi_schedule = [];
+				this_manager.process_midi(this_manager.midi_file);
+				$("#slider").attr("max", this_manager.midi_schedule
+						[this_manager.midi_schedule.length - 1].delta
+						* this_manager.midi_step);
+				this_manager.set_status_message("Successfully loaded "
+					+ midi_filename + "!", true);
+			} catch(err) {
+				this_manager.set_status_message("Unable to load " + midi_filename + ".", true);
+			}
 		},
 		
 		function() {
