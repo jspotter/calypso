@@ -644,6 +644,11 @@ function Manager(drums) {
 					* this_manager.midi_step);
 			this_manager.set_status_message("Successfully loaded "
 				+ midi_filename + "!", true);
+		},
+		
+		function() {
+			this_manager.set_status_message("Unable to load "
+				+ midi_filename + ".", true);
 		});
 	}	
 
@@ -823,6 +828,10 @@ function Manager(drums) {
 				.append(select_button);
 			if (should_load_midi)
 				select_button.click();
+		},
+		
+		function() {
+			$("#midis").html("Unable to load file list.");
 		});
 	}
 	
@@ -887,7 +896,7 @@ function Manager(drums) {
  * Taken from:
  * https://github.com/gasman/jasmid/blob/master/index.html
  ***************************/
-function loadRemote(path, callback) {
+function loadRemote(path, callback1, callback2) {
 	var fetch = new XMLHttpRequest();
 	fetch.open('GET', path);
 	fetch.overrideMimeType("text/plain; charset=x-user-defined");
@@ -901,7 +910,9 @@ function loadRemote(path, callback) {
 			for (var z = 0; z < mx; z++) {
 				ff[z] = scc(t.charCodeAt(z) & 255);
 			}
-			callback(ff.join(""));
+			callback1(ff.join(""));
+		} else if(this.readyState == 4) {
+			callback2();
 		}
 	}
 	fetch.send();
