@@ -206,6 +206,8 @@ function play_sound(note) {
 		sound.autoplay = true;
 		sound.loop = false;
 		sound.volume = 0.05;
+		if (note == 0)
+			sound.volume = 0.2;
 
 		document.body.appendChild(sound);
 		setTimeout(function() {
@@ -226,7 +228,7 @@ function play_sound(note) {
  * on screen and handling note on and
  * note off events.
  */
-function Drum(type) {
+function Drum(type, manager) {
 	var this_drum = this;
 	this.type = type;
 	this.my_notes = note_offsets[this.type];
@@ -236,6 +238,7 @@ function Drum(type) {
 	this.scale = 1;
 	this.click_initialized = false;
 	this.hidden = false;
+	this.manager = manager;
 
 	// Set up this drum
 	this.setup = function(top_offset, left_offset, max_width, max_height) {
@@ -316,7 +319,8 @@ function Drum(type) {
 		id = this.type + "_" + note;
 		$("#" + id).fadeTo(0, 1);
 		
-		play_sound(note);
+		if (this.manager.do_play_sound)
+			play_sound(note);
 	}
 
 	this.note_off = function(note) {
@@ -342,12 +346,13 @@ function Manager(drums) {
 	this.met_timeout = undefined;
 	this.ticks_per_beat = undefined;
 	this.click_track = true;
+	this.do_play_sound = true;
 
 	this.drums = {}
 	this.drum_statuses = {};
 	for (var i = 0; i < drums.length; i++) {
 		var drum_type = drums[i];
-		this.drums[drum_type] = new Drum(drum_type);
+		this.drums[drum_type] = new Drum(drum_type, this_manager);
 		this.drum_statuses[drum_type] = true;
 	}
 
@@ -448,7 +453,8 @@ function Manager(drums) {
 	// Plays a metronome sound
 	this.play_metronome = function() {
 		this_manager.met_timeout = setTimeout(function() {
-			play_sound("0");
+			if (this_manager.do_play_sound)
+				play_sound("0");
 			$("#met_vis1").fadeTo(0, 1);
 			$("#met_vis2").fadeTo(0, 1);
 			$("#met_vis1").fadeTo("fast", 0);
@@ -703,6 +709,16 @@ function Manager(drums) {
 					}
 				});
 		checks.push(click_check);
+		var sound_check = $("<input>", {type: "checkbox", value: "sound",
+				checked: "checked"})
+				.click(function () {
+					if($(this).attr("checked") == "checked") {
+						this_manager.do_play_sound = true;
+					} else {
+						this_manager.do_play_sound = false;
+					}
+				});
+		checks.push(sound_check);
 		var slider = $("<input>", 
 			{
 				type: "range",
