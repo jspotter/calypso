@@ -709,8 +709,8 @@ function Manager(drums) {
 		var tempo = $("<input>",
 			{
 				type: "range",
-				min: "100",
-				max: "300",
+				min: "10",
+				max: "1000",
 				value: "150",
 				width: "80%",
 				id: "tempo"
