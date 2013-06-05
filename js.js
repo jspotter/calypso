@@ -119,7 +119,7 @@ var note_offsets = {
 		"51": {"left": 266, "top": 6},
 		"52": {"left": 561, "top": 136},
 		"53": {"left": 5, "top": 211},
-		"54": {"left": 214, "top": 30},
+		"54": {"left": 216, "top": 28},
 		"55": {"left": 457, "top": 123},
 		"56": {"left": 162, "top": 157.5},
 		"57": {"left": 363, "top": 105},
@@ -170,7 +170,7 @@ var note_offsets = {
 		"70": {"left": 525.75, "top": 253},
 		"71": {"left": 91.5, "top": 204},
 		
-		"72": {"left": 299, "top": 114}
+		"72": {"left": 296, "top": 113}
 	}
 };
 
@@ -330,7 +330,7 @@ function Manager(drums) {
 	this.midi_schedule = undefined;
 	this.stopped = true;
 	this.sound_map = {};
-	this.sound_redundancy = 10;
+	this.sound_redundancy = 4;
 	
 	// Helper function to compute offsets for a row of drums
 	this.compute_offsets = function(drum_plan, cur_row, highest_row) {
