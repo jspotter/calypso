@@ -22,3 +22,16 @@ img.note {
 	padding-left: 20px;
 	font-family: Tahoma, sans-serif;
 }
+
+#cover {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: #113;
+	text-align: center;
+	font-family: Tahoma, sans-serif;
+	color: white;
+	z-index: 999;
+}

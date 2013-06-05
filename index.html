@@ -14,7 +14,14 @@
 			window.onresize = function() {
 				manager.setup_drums();
 			}
+			$('#cover').fadeTo('slow', 0, function() {
+				$('#cover').css('z-index', '-1');
+			});
 	">
+		<div id="cover">
+			<h1><br><br>Loading...</h1>
+		</div>
+
 		<img id="lead" class="drum" src="lead.png">
 		<img id="tenors" class="drum" src="tenors.png">
 		<img id="seconds" class="drum" src="seconds.png">
