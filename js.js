@@ -785,7 +785,6 @@ function Manager(drums) {
 			.append("<br>")
 			.append(status_div);
 		
-		// Add dat shit
 		$("#controls")
 			.html("")
 			.append("Position:&nbsp;")
