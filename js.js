@@ -174,12 +174,12 @@ var note_offsets = {
 	}
 };
 
-var track_nums = {
-	"lead": 1,
-	"tenors": 2,
-	"seconds": 3,
-	"triples": 4,
-	"new_triples": 4
+var track_offsets = {
+	"lead": -4,
+	"tenors": -3,
+	"seconds": -2,
+	"triples": -1,
+	"new_triples": -1
 };
 
 var num_drums = {
@@ -561,8 +561,8 @@ function Manager(drums) {
 		var header = file["header"];
 		this_manager.ticks_per_beat = header["ticksPerBeat"];
 		
-		for (var type in track_nums) {
-			var events = tracks[track_nums[type]];
+		for (var type in track_offsets) {
+			var events = tracks[tracks.length + track_offsets[type]];
 			var total_delta = 0;
 			for (var i = 0; i < events.length; i++) {
 				var ev = events[i];
